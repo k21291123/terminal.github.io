@@ -1,38 +1,45 @@
 /**
- * Aqtobe-Server Dashboard: Final Edition
- * Настроен под твой HTML (id="command-input" и id="output")
+ * Aqtobe-Server Terminal JS
+ * Настроено для: https://k21291123.github.io/terminal.github.io/
  */
 
-// --- 1. АУДИО СИСТЕМА (БЕЗОПАСНАЯ) ---
-if (typeof audioCtx === 'undefined') {
-    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// --- 1. АУДИО КОНТЕКСТ (БЕЗОПАСНЫЙ) ---
+let audioCtx;
+const VOL_KEYS = 0.04;    // Тихий звук клавиш
+const VOL_MONITOR = 0.002; // Едва заметный гул
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
 }
 
-const VOL_KEYS = 0.04;    
-const VOL_MONITOR = 0.002;
-
+// Звук нажатия клавиши
 function playKeySound() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
     osc.type = 'triangle'; 
-    osc.frequency.setValueAtTime(150 + Math.random() * 50, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(150 + Math.random() * 40, audioCtx.currentTime);
 
     gain.gain.setValueAtTime(0, audioCtx.currentTime);
     gain.gain.linearRampToValueAtTime(VOL_KEYS, audioCtx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
 
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    osc.connect(gain).connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.15);
+    osc.stop(audioCtx.currentTime + 0.1);
 }
 
+// Эффект гула старого монитора
 function startMonitorHum() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    initAudio();
     
-    // Писк монитора
+    // Высокочастотный писк
     const osc = audioCtx.createOscillator();
     const g = audioCtx.createGain();
     osc.frequency.value = 10000;
@@ -40,7 +47,7 @@ function startMonitorHum() {
     osc.connect(g).connect(audioCtx.destination);
     osc.start();
 
-    // Белый шум
+    // Белый шум (статика)
     const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < buffer.length; i++) data[i] = Math.random() * 2 - 1;
@@ -53,35 +60,36 @@ function startMonitorHum() {
     src.start();
 }
 
-// --- 2. ЛОГИКА ТЕРМИНАЛА (ПОД ТВОЙ HTML) ---
+// --- 2. ЛОГИКА ТЕРМИНАЛА ---
 const output = document.getElementById('output');
 const input = document.getElementById('command-input');
 
 function handleCommand(cmd) {
-    const line = document.createElement('div');
-    line.style.margin = "5px 0";
     const cleanCmd = cmd.toLowerCase().trim();
-
-    // Добавляем саму введенную команду в историю вывода
+    
+    // Создаем строку с тем, что ввел пользователь
     const historyLine = document.createElement('div');
-    historyLine.innerHTML = `<span class="prompt">guest@aktobe-server:~$</span> <span>${cmd}</span>`;
+    historyLine.innerHTML = `<span class="prompt">guest@aktobe-server:~$</span> <span class="user-cmd">${cmd}</span>`;
     output.appendChild(historyLine);
+
+    const response = document.createElement('div');
+    response.style.marginBottom = "10px";
 
     switch (cleanCmd) {
         case 'help':
-            line.innerHTML = `
+            response.innerHTML = `
                 <span style="color: #50fa7b">ДОСТУПНЫЕ КОМАНДЫ:</span><br>
                 - <b style="color: #8be9fd">help</b>: список команд<br>
-                - <b style="color: #8be9fd">clear</b>: очистить экран<br>
-                - <b style="color: #8be9fd">neofetch</b>: инфо о системе<br>
-                - <b style="color: #8be9fd">status</b>: проверка сервера<br>
-                - <b style="color: #8be9fd">whoami</b>: инфо о пользователе
+                - <b style="color: #8be9fd">clear</b>: очистить терминал<br>
+                - <b style="color: #8be9fd">neofetch</b>: информация о системе<br>
+                - <b style="color: #8be9fd">whoami</b>: о пользователе<br>
+                - <b style="color: #8be9fd">status</b>: состояние сервера
             `;
             break;
 
         case 'neofetch':
-            line.innerHTML = `
-                <pre style="color: #bd93f9; margin: 10px 0; line-height: 1.2; font-family: 'VT323', monospace;">
+            response.innerHTML = `
+                <pre style="color: #bd93f9; margin: 5px 0; line-height: 1.2;">
    .,-:;//;:-.      <span style="color: #ff79c6">kirill@aqtobe-server</span>
   . -H########M- .   <span style="color: #f8f8f2">--------------------</span>
  ^###########M ^     <span style="color: #8be9fd">OS</span>: Debian 13 (Trixie)
@@ -92,12 +100,12 @@ function handleCommand(cmd) {
                 </pre>`;
             break;
 
-        case 'status':
-            line.innerHTML = 'System: <span style="color: #50fa7b">Active</span><br>Audio: <span style="color: #50fa7b">Connected (Наушники)</span>';
+        case 'whoami':
+            response.textContent = "User: Kirill | Occupation: Student & Web Developer in Aqtobe.";
             break;
 
-        case 'whoami':
-            line.textContent = 'User: Kirill | Occupation: Student & JS Developer';
+        case 'status':
+            response.innerHTML = "System: <span style="color: #50fa7b">ONLINE</span><br>Audio: <span style="color: #50fa7b">READY</span>";
             break;
 
         case 'clear':
@@ -108,33 +116,44 @@ function handleCommand(cmd) {
             return;
 
         default:
-            line.innerHTML = `<span style="color: #ff5555">Ошибка:</span> команда "${cmd}" не найдена.`;
+            response.innerHTML = `<span style="color: #ff5555">Ошибка:</span> команда "${cmd}" не найдена. Введите <b>help</b>.`;
     }
 
-    output.appendChild(line);
-    // Авто-скролл вниз
+    output.appendChild(response);
+    
+    // Авто-прокрутка вниз
     window.scrollTo(0, document.body.scrollHeight);
 }
 
-// --- 3. ОБРАБОТКА СОБЫТИЙ ---
+// --- 3. ОБРАБОТЧИКИ СОБЫТИЙ ---
 
-// Фокус и Enter
+// Нажатия клавиш
 window.addEventListener('keydown', (e) => {
+    // Инициализируем звук при первом нажатии, если еще не сделано
+    if (!audioCtx) initAudio();
+    
     playKeySound();
 
-    if (input) {
-        if (document.activeElement !== input) {
-            input.focus();
-        }
+    // Авто-фокус на ввод при печати
+    if (document.activeElement !== input) {
+        input.focus();
+    }
 
-        if (e.key === 'Enter') {
-            handleCommand(input.value);
-            input.value = '';
-        }
+    if (e.key === 'Enter') {
+        handleCommand(input.value);
+        input.value = '';
     }
 });
 
-// Запуск звука монитора по первому клику
-window.addEventListener('click', () => {
-    startMonitorHum();
-}, { once: true });
+// Клик по любому месту экрана возвращает фокус и запускает фон
+document.addEventListener('click', () => {
+    if (input) input.focus();
+    if (!audioCtx || audioCtx.state === 'suspended') {
+        startMonitorHum();
+    }
+}, { once: false });
+
+// Стартовое приветствие
+window.onload = () => {
+    handleCommand('neofetch');
+};
