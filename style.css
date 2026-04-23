@@ -1,0 +1,80 @@
+:root { 
+    --glow-color: #00ff41; 
+    --bg-color: #050505; 
+}
+
+body {
+    background-color: #080808;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+}
+
+#terminal {
+    width: 95%;
+    height: 90vh;
+    max-width: 1000px;
+    background-color: var(--bg-color);
+    padding: 20px;
+    position: relative;
+    font-family: 'VT323', monospace;
+    font-size: 22px; 
+    color: var(--glow-color);
+    border: 10px solid #1a1a1a;
+    border-radius: 10px;
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#terminal::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    z-index: 5;
+    background-size: 100% 3px, 3px 100%;
+    pointer-events: none;
+}
+
+.scanline {
+    width: 100%; height: 50px; z-index: 10;
+    background: linear-gradient(0deg, transparent 0%, rgba(0, 255, 65, 0.05) 50%, transparent 100%);
+    position: absolute; left: 0;
+    animation: scanline 6s linear infinite;
+    pointer-events: none;
+}
+
+#output {
+    white-space: pre-wrap;
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    scrollbar-width: none;
+}
+
+.input-line { display: flex; align-items: flex-start; }
+.prompt { color: var(--glow-color); margin-right: 10px; white-space: nowrap; }
+
+#command-input {
+    background: transparent;
+    border: none;
+    color: var(--glow-color);
+    outline: none;
+    font-family: inherit;
+    font-size: inherit;
+    flex: 1;
+}
+
+@keyframes scanline { 0% { top: -100px; } 100% { top: 100%; } }
+
+@media (min-width: 768px) {
+    #terminal { font-size: 32px; padding: 40px; }
+}
